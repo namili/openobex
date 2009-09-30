@@ -25,10 +25,11 @@ function ( XSL_TRANSFORM xslurl infile )
 
   if ( XSLT_PROCESSOR STREQUAL "xsltproc" )
     if ( XSLT_XSLTPROC_EXECUTABLE )
-      set ( XSL_TRANSFORM_COMMAND
-	${XSLT_XSLTPROC_EXECUTABLE}
-	${XSLT_XSLTPROC_OPTIONS}
-	"${xslurl}" "${infile}"
+      add_custom_command (
+	OUTPUT ${ARGN}
+	COMMAND ${XSLT_XSLTPROC_EXECUTABLE} ${XSLT_XSLTPROC_OPTIONS} "${xslurl}" "${infile}"
+	DEPENDS "${infile}"
+	VERBATIM
       )
     else ( XSLT_XSLTPROC_EXECUTABLE )
       message ( FATAL_ERROR "xsltproc not found" )
@@ -36,11 +37,11 @@ function ( XSL_TRANSFORM xslurl infile )
 
   elseif ( XSLT_PROCESSOR STREQUAL "saxon" )
     if ( XSLT_SAXON_COMMAND )
-      set ( XSL_TRANSFORM_COMMAND
-	${XSLT_SAXON_COMMAND}
-	${XSLT_SAXON_OPTIONS}
-	"${infile}" "${xslurl}"
-	${Xslt_PARAMS}
+      add_custom_command (
+	OUTPUT ${ARGN}
+	COMMAND "${JAVA_RUNTIME}" -cp "${Xslt_SAXON_CLASSPATH}" ${XSLT_SAXON_COMMAND} ${XSLT_SAXON_OPTIONS} "${infile}" "${xslurl}" ${Xslt_PARAMS}
+	DEPENDS "${infile}"
+	VERBATIM
       )
     else ( XSLT_SAXON_COMMAND )
       message ( FATAL_ERROR "Saxon-6.5.x not found" )
@@ -57,10 +58,11 @@ function ( XSL_TRANSFORM xslurl infile )
     )
     set ( infile "${CMAKE_CURRENT_BINARY_DIR}/${infile_name}" )
     if ( XSLT_XALAN2_COMMAND )
-      set ( XSL_TRANSFORM_COMMAND
-	${XSLT_XALAN2_COMMAND}
-	${XSLT_XALAN2_OPTIONS}
-	-in "${infile}" -xsl "${xslurl}"
+      add_custom_command (
+	OUTPUT ${ARGN}
+	COMMAND "${JAVA_RUNTIME}" -cp "${Xslt_XALAN2_CLASSPATH}" ${XSLT_XALAN2_COMMAND} ${XSLT_XALAN2_OPTIONS} -in "${infile}" -xsl "${xslurl}"
+	DEPENDS "${infile}"
+	VERBATIM
       )
     else ( XSLT_XALAN2_COMMAND )
       message ( FATAL_ERROR " Xalan 2.x not found" )
@@ -69,12 +71,4 @@ function ( XSL_TRANSFORM xslurl infile )
   else ( XSLT_PROCESSOR STREQUAL "xsltproc" )
     message ( FATAL_ERROR "Unsupported XSLT processor" )
   endif ( XSLT_PROCESSOR STREQUAL "xsltproc" )
-
-  add_custom_command (
-    OUTPUT ${ARGN}
-    COMMAND ${XSL_TRANSFORM_COMMAND}
-    DEPENDS "${infile}"
-    VERBATIM
-  )
-  set ( XSL_TRANSFORM_COMMAND )
 endfunction ( XSL_TRANSFORM )

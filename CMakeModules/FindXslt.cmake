@@ -15,6 +15,11 @@ if ( JAVA_RUNTIME )
     set ( JAVA_CLASSPATH $ENV{CLASSPATH} CACHE STRING "java classpath" )
   endif ( NOT JAVA_CLASSPATH )
   set ( Xslt_CLASSPATH ${JAVA_CLASSPATH} )
+  if ( NOT CMAKE_SYSTEM_NAME STREQUAL "Windows" )
+    # Non-Windows classpath may use : instead of ;
+    # so make this a cmake list here by always using ;
+    string ( REPLACE ":" ";" Xslt_CLASSPATH "${Xslt_CLASSPATH}" )
+  endif ( NOT CMAKE_SYSTEM_NAME STREQUAL "Windows" )
 
   find_file ( JAVA_RESOLVER_LIBRARY
     NAMES resolver.jar xml-commons-resolver-1.1.jar
@@ -24,11 +29,7 @@ if ( JAVA_RUNTIME )
   )
   mark_as_advanced ( JAVA_RESOLVER_LIBRARY )
   if ( JAVA_RESOLVER_LIBRARY )
-    if ( Xslt_CLASSPATH )
-      set ( Xslt_CLASSPATH "${Xslt_CLASSPATH}:${JAVA_RESOLVER_LIBRARY}" )
-    else ( Xslt_CLASSPATH )
-      set ( Xslt_CLASSPATH "${JAVA_RESOLVER_LIBRARY}" )
-    endif ( Xslt_CLASSPATH )
+    list ( APPEND Xslt_CLASSPATH "${JAVA_RESOLVER_LIBRARY}" )
   endif ( JAVA_RESOLVER_LIBRARY )
 
   find_path ( JAVA_PROPERTIES_CATALOGMANAGER
@@ -40,11 +41,7 @@ if ( JAVA_RUNTIME )
   )
   mark_as_advanced ( JAVA_PROPERTIES_CATALOGMANAGER )
   if ( JAVA_PROPERTIES_CATALOGMANAGER )
-    if ( Xslt_CLASSPATH )
-      set ( Xslt_CLASSPATH "${Xslt_CLASSPATH}:${JAVA_PROPERTIES_CATALOGMANAGER}" )
-    else ( Xslt_CLASSPATH )
-      set ( Xslt_CLASSPATH "${JAVA_PROPERTIES_CATALOGMANAGER}" )
-    endif ( Xslt_CLASSPATH )
+    list ( APPEND Xslt_CLASSPATH "${JAVA_PROPERTIES_CATALOGMANAGER}" )
   endif ( JAVA_PROPERTIES_CATALOGMANAGER )
 
   #
@@ -72,12 +69,20 @@ if ( JAVA_RUNTIME )
   )
   mark_as_advanced ( JAVA_XERCES_IMPL_LIBRARY )
   if ( XALAN2 AND JAVA_XML_APIS_LIBRARY AND JAVA_XERCES_IMPL_LIBRARY )
-    set ( Xslt_XALAN2_CLASSPATH "${Xslt_CLASSPATH}:${XALAN2}:${JAVA_XML_APIS_LIBRARY}:${JAVA_XERCES_IMPL_LIBRARY}" )
+    set ( Xslt_XALAN2_CLASSPATH
+      ${Xslt_CLASSPATH}
+      "${XALAN2}"
+      "${JAVA_XML_APIS_LIBRARY}"
+      "${JAVA_XERCES_IMPL_LIBRARY}"
+    )
     if ( Xslt_XALAN2_EXTENSIONS )
-      set ( Xslt_XALAN2_CLASSPATH "${Xslt_XALAN2_CLASSPATH}:${Xslt_XALAN2_EXTENSIONS}" )
+      list ( APPEND Xslt_XALAN2_CLASSPATH "${Xslt_XALAN2_EXTENSIONS}" )
     endif ( Xslt_XALAN2_EXTENSIONS )
+    if ( NOT CMAKE_SYSTEM_NAME STREQUAL "Windows" )
+      string ( REPLACE ";" ":" Xslt_XALAN2_CLASSPATH "${Xslt_XALAN2_CLASSPATH}" )
+    endif ( NOT CMAKE_SYSTEM_NAME STREQUAL "Windows" )
     set ( XSLT_XALAN2_COMMAND
-      ${JAVA_RUNTIME} -cp "${Xslt_XALAN2_CLASSPATH}" org.apache.xalan.xslt.Process
+      org.apache.xalan.xslt.Process
     )
     if ( JAVA_RESOLVER_LIBRARY AND JAVA_PROPERTIES_CATALOGMANAGER )
       list ( APPEND XSLT_XALAN2_COMMAND
@@ -98,12 +103,18 @@ if ( JAVA_RUNTIME )
   )
   mark_as_advanced ( SAXON )
   if ( SAXON )
-    set ( Xslt_SAXON_CLASSPATH "${Xslt_CLASSPATH}:${SAXON}" )
+    set ( Xslt_SAXON_CLASSPATH
+      ${Xslt_CLASSPATH}
+      "${SAXON}"
+    )
     if ( Xslt_SAXON_EXTENSIONS )
-      set ( Xslt_SAXON_CLASSPATH "${Xslt_SAXON_CLASSPATH}:${Xslt_SAXON_EXTENSIONS}" )
+      list ( APPEND Xslt_SAXON_CLASSPATH "${Xslt_SAXON_EXTENSIONS}" )
     endif ( Xslt_SAXON_EXTENSIONS )
+    if ( NOT CMAKE_SYSTEM_NAME STREQUAL "Windows" )
+      string ( REPLACE ";" ":" Xslt_SAXON_CLASSPATH "${Xslt_SAXON_CLASSPATH}" )
+    endif ( NOT CMAKE_SYSTEM_NAME STREQUAL "Windows" )
     set ( XSLT_SAXON_COMMAND
-      ${JAVA_RUNTIME} -cp "${Xslt_SAXON_CLASSPATH}" com.icl.saxon.StyleSheet
+      com.icl.saxon.StyleSheet
     )
     if ( JAVA_RESOLVER_LIBRARY )
       list ( APPEND XSLT_SAXON_COMMAND
