@@ -51,6 +51,7 @@ static void map_ip4to6(struct sockaddr_in *in, struct sockaddr_in6 *out)
 	else
 		out->sin6_port = in->sin_port;
 	out->sin6_flowinfo = 0;
+	out->sin6_scope_id = 0;
 
 	/* default, matches IN6ADDR_ANY */
 	memset(out->sin6_addr.s6_addr, 0, sizeof(out->sin6_addr.s6_addr));
@@ -87,6 +88,7 @@ void inobex_prepare_connect(obex_t *self, struct sockaddr *saddr, int addrlen)
 	addr.sin6_port     = htons(OBEX_PORT);
 	addr.sin6_flowinfo = 0;
 	memcpy(&addr.sin6_addr, &in6addr_loopback, sizeof(addr.sin6_addr));
+	addr.sin6_scope_id = 0;
 
 	if (saddr == NULL)
 		saddr = (struct sockaddr*)(&addr);
@@ -117,6 +119,7 @@ void inobex_prepare_listen(obex_t *self, struct sockaddr *saddr, int addrlen)
 	addr.sin6_port     = htons(OBEX_PORT);
 	addr.sin6_flowinfo = 0;
 	memcpy(&addr.sin6_addr, &in6addr_any, sizeof(addr.sin6_addr));
+	addr.sin6_scope_id = 0;
 
 	/* Bind local service */
 	if (saddr == NULL)
