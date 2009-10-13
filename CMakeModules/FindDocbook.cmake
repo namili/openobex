@@ -1,3 +1,34 @@
+# - Find DocBook/XML tools
+# This module can be used to translate Docbook/XML files to different
+# output formats using XSLT files. Currently support XSLT processors
+# that can be used for DocBook:
+#   xsltproc
+#   saxon-6.5.x
+#   xalan-2.x
+#
+# Typical usage is:
+# find_package(DocBook REQUIRED)
+# include(${DocBook_USE_FILE})
+# docbook_generate(manpage my-app.xml MANPAGE_FILE_LIST)
+# foreach(file ${MANPAGE_FILE_LIST})
+#   ...
+# endforeach(file)
+#
+# This modules uses the following variables that must be set before
+# includign the USE_FILE:
+#   DOCBOOK_XSLT_PROCESSOR - select the xslt processor to use
+#
+# The following functions are provided:
+#   DOCBOOK_GENERATE(format inputFile output)
+#     This function determines the output file names from the input
+#     file, depending on the format and stores it as cmake list in
+#     output. The currently support formats for "manpage" and "html".
+#
+# The following variables are set by this module:
+#   DocBook_FOUND          - True is DocBook processing is available
+#   DocBook_USE_FILE       - Name of the USE_FILE
+#   DOCBOOK_XSLT_PROCESSOR - If not set, one of the available XSLT processors
+#
 
 find_file ( JAVA_DOCBOOK_XSL_SAXON_LIBRARY
   NAMES docbook-xsl-saxon_1.00.jar
