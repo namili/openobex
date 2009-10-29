@@ -911,6 +911,7 @@ int obex_object_suspend(obex_object_t *object)
 int obex_object_resume(obex_t *self, obex_object_t *object)
 {
 	int ret;
+	uint8_t cmd;
 
 	if (!object->suspend)
 		return 0;
@@ -920,23 +921,22 @@ int obex_object_resume(obex_t *self, obex_object_t *object)
 	if (object->first_packet_sent && !object->continue_received)
 		return 0;
 
+	cmd = (self->state & MODE_SRV) ? object->cmd :
+						object->opcode & ~OBEX_FINAL;
+
 	ret = obex_object_send(self, object, TRUE, FALSE);
 
 	if (ret < 0) {
-		obex_deliver_event(self, OBEX_EV_LINKERR,
-					object->opcode & ~OBEX_FINAL, 0, TRUE);
+		obex_deliver_event(self, OBEX_EV_LINKERR, cmd, 0, TRUE);
 		return -1;
 	} else if (ret == 0) {
-		obex_deliver_event(self, OBEX_EV_PROGRESS,
-					object->opcode & ~OBEX_FINAL, 0,
-					FALSE);
+		obex_deliver_event(self, OBEX_EV_PROGRESS, cmd, 0, FALSE);
 		object->first_packet_sent = 1;
 		object->continue_received = 0;
 	} else {
 		if (self->state & MODE_SRV) {
 			obex_deliver_event(self, OBEX_EV_REQDONE,
-						object->opcode & ~OBEX_FINAL,
-						0, TRUE);
+							cmd, 0, TRUE);
 			self->state = MODE_SRV | STATE_IDLE;
 			return 0;
 		}
