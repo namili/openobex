@@ -66,8 +66,6 @@ typedef struct obex_transport {
 
 } obex_transport_t;
 
-int obex_transport_accept(struct obex *self);
-
 int obex_transport_handle_input(struct obex *self, int timeout);
 int obex_transport_connect_request(struct obex *self);
 void obex_transport_disconnect_request(struct obex *self);

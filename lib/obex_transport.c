@@ -52,6 +52,45 @@
 #endif
 
 /*
+ * Function obex_transport_accept(self)
+ *
+ *    Accept an incoming connection.
+ *
+ */
+static int obex_transport_accept(obex_t *self)
+{
+	int ret = -1;
+
+	DEBUG(4, "\n");
+
+	switch (self->trans.type) {
+#ifdef HAVE_IRDA
+	case OBEX_TRANS_IRDA:
+		ret = irobex_accept(self);
+		break;
+#endif /*HAVE_IRDA*/
+	case OBEX_TRANS_INET:
+		ret = inobex_accept(self);
+		break;
+#ifdef HAVE_BLUETOOTH
+	case OBEX_TRANS_BLUETOOTH:
+		ret = btobex_accept(self);
+		break;
+#endif /*HAVE_BLUETOOTH*/
+	case OBEX_TRANS_FD:
+		/* no real accept on a file */
+		ret = 0;
+		break;
+
+	default:
+		DEBUG(4, "domain not implemented!\n");
+		break;
+	}
+
+	return ret;
+}
+
+/*
  * Function obex_transport_handle_input(self, timeout)
  *
  *    Used when working in synchronous mode.
@@ -130,45 +169,6 @@ int obex_transport_handle_input(obex_t *self, int timeout)
 				obex_transport_disconnect_server(self);
 		} else
 			ret = -1;
-	}
-
-	return ret;
-}
-
-/*
- * Function obex_transport_accept(self)
- *
- *    Accept an incoming connection.
- *
- */
-int obex_transport_accept(obex_t *self)
-{
-	int ret = -1;
-
-	DEBUG(4, "\n");
-
-	switch (self->trans.type) {
-#ifdef HAVE_IRDA
-	case OBEX_TRANS_IRDA:
-		ret = irobex_accept(self);
-		break;
-#endif /*HAVE_IRDA*/
-	case OBEX_TRANS_INET:
-		ret = inobex_accept(self);
-		break;
-#ifdef HAVE_BLUETOOTH
-	case OBEX_TRANS_BLUETOOTH:
-		ret = btobex_accept(self);
-		break;
-#endif /*HAVE_BLUETOOTH*/
-	case OBEX_TRANS_FD:
-		/* no real accept on a file */
-		ret = 0;
-		break;
-
-	default:
-		DEBUG(4, "domain not implemented!\n");
-		break;
 	}
 
 	return ret;
