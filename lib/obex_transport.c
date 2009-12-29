@@ -103,7 +103,11 @@ int obex_transport_handle_input(obex_t *self, int timeout)
 		}
 
 		/* Wait for input */
-		ret = select((int)highestfd+1, &fdset, NULL, NULL, &time);
+		if (timeout >= 0) {
+			ret = select((int)highestfd+1, &fdset, NULL, NULL, &time);
+		} else {
+			ret = select((int)highestfd+1, &fdset, NULL, NULL, NULL);
+		}
 
 		/* Check if this is a timeout (0) or error (-1) */
 		if (ret < 1)
