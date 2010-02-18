@@ -170,6 +170,9 @@ typedef union {
 #define OBEX_HDR_ID_OBJECTCLASS	 0x11	/* OBEX Object class of object */
 #define OBEX_HDR_ID_SESSIONPARAM 0x12	/* Parameters used in session commands/responses */
 #define OBEX_HDR_ID_SESSIONSEQ	 0x13	/* Sequence number used in each OBEX packet for reliability */
+#define OBEX_HDR_ID_ACTION_ID	 0x14	/* Specifies the action for the ACTION command */
+#define OBEX_HDR_ID_DESTNAME	 0x15	/* Destination object name */
+#define OBEX_HDR_ID_PERMISSIONS	 0x16	/* bit mask for setting permissions */
 #define OBEX_HDR_ID_MASK	 0x3f
 
 #define OBEX_HDR_EMPTY		0x00	/* Empty header (buggy OBEX servers) */
@@ -194,6 +197,9 @@ typedef union {
 #define OBEX_HDR_OBJECTCLASS	(OBEX_HDR_ID_OBJECTCLASS  | OBEX_HDR_TYPE_BYTES  )
 #define OBEX_HDR_SESSIONPARAM	(OBEX_HDR_ID_SESSIONPARAM | OBEX_HDR_TYPE_BYTES  )
 #define OBEX_HDR_SESSIONSEQ	(OBEX_HDR_ID_SESSIONSEQ   | OBEX_HDR_TYPE_UINT8  )
+#define OBEX_HDR_ACTION_ID	(OBEX_HDR_ID_ACTION_ID    | OBEX_HDR_TYPE_UINT8  )
+#define OBEX_HDR_DESTNAME	(OBEX_HDR_ID_DESTNAME     | OBEX_HDR_TYPE_UNICODE)
+#define OBEX_HDR_PERMISSIONS	(OBEX_HDR_ID_PERMISSIONS  | OBEX_HDR_TYPE_UINT32 )
 
 /* Commands */
 #define OBEX_CMD_CONNECT	0x00
@@ -201,6 +207,7 @@ typedef union {
 #define OBEX_CMD_PUT		0x02
 #define OBEX_CMD_GET		0x03
 #define OBEX_CMD_SETPATH	0x05
+#define OBEX_CMD_ACTION		0x06
 #define OBEX_CMD_SESSION	0x07 /* used for reliable session support */
 #define OBEX_CMD_ABORT		0x7f
 #define OBEX_FINAL		0x80
@@ -214,7 +221,7 @@ typedef union {
 #define OBEX_RSP_NON_AUTHORITATIVE	0x23
 #define OBEX_RSP_NO_CONTENT		0x24
 #define OBEX_RSP_RESET_CONTENT		0x25
-#define OBEX_RSP_PARTIAL_CONTENT        0x26
+#define OBEX_RSP_PARTIAL_CONTENT	0x26
 #define OBEX_RSP_MULTIPLE_CHOICES	0x30
 #define OBEX_RSP_MOVED_PERMANENTLY	0x31
 #define OBEX_RSP_MOVED_TEMPORARILY	0x32
