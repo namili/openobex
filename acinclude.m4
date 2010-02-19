@@ -191,7 +191,6 @@ AC_DEFUN([AC_PATH_USB], [
 AC_DEFUN([AC_PATH_USB1], [
 	usb1_lib_found=no
 	PKG_CHECK_MODULES(USB1, libusb-1.0, usb1_lib_found=yes, usb1_lib_found=no)
-	AC_CHECK_FILE(${prefix}/lib/pkgconfig/libusb-1.0.pc, REQUIRES="libusb1")
 	AC_SUBST(USB1_CFLAGS)
 	AC_SUBST(USB1_LIBS)
 
