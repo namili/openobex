@@ -30,6 +30,7 @@
 #include <stdio.h>		/* perror */
 #include <errno.h>		/* errno and EADDRNOTAVAIL */
 #include <stdlib.h>
+#include <poll.h>		/* POLLIN */
 
 #include <libusb.h>
 
@@ -339,6 +340,35 @@ void usbobex_free_interfaces(int num, obex_interface_t *intf)
 }
 
 /*
+ * Function usbobex_get_fd ()
+ *
+ *    Get the "poll out" file descriptor for the USB device,
+ *    used to check for events in an async way
+ *
+ */
+static int usbobex_get_fd(void)
+{
+	const struct libusb_pollfd **usbfds;
+	const struct libusb_pollfd *usbfd;
+	int i = 0;
+
+	DEBUG(4, "Getting the USB file descriptor");
+
+	usbfds = libusb_get_pollfds(libusb_ctx);
+	if (usbfds == NULL) {
+		DEBUG(4, "Could not get USB file descriptors");
+		return INVALID_SOCKET;
+	}
+
+	while ((usbfd = usbfds[i++]) != NULL) {
+		if (usbfd->events & POLLIN)
+			return usbfd->fd;
+	}
+
+	return INVALID_SOCKET;
+}
+
+/*
  * Function usbobex_connect_request (self)
  *
  *    Open the USB connection
@@ -379,6 +409,7 @@ int usbobex_connect_request(obex_t *self)
 	}
 
 	self->trans.mtu = OBEX_MAXIMUM_MTU;
+	self->fd = usbobex_get_fd();
 	DEBUG(2, "transport mtu=%d\n", self->trans.mtu);
 	return 1;
 
