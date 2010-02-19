@@ -267,6 +267,8 @@ int obex_data_indication(obex_t *self, uint8_t *buf, int buflen)
 
 			actual = obex_transport_read(self, size - msg->data_size, buf,
 				buflen);
+			/* hdr might not be valid anymore if the _read did a realloc */
+			hdr = (obex_common_hdr_t *) msg->data;
 
 			/* Check if we are still connected */
 			/* do not error if the data is from non-empty but partial buffer (custom transport) */
