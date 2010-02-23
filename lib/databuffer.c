@@ -31,7 +31,7 @@ slist_t *slist_append(slist_t *list, void *element)
 {
 	slist_t *node, *p;
 
-	node = malloc(sizeof(slist_t));
+	node = malloc(sizeof(*node));
 	assert(node != NULL);
 	node->data = element;
 	node->next = NULL;
@@ -77,10 +77,10 @@ buf_t *buf_new(size_t default_size)
 {
 	buf_t *p;
 
-	p = malloc(sizeof(buf_t));
+	p = malloc(sizeof(*p));
 	if (!p)
 		return NULL;
-	p->buffer = malloc(sizeof(uint8_t) * default_size);
+	p->buffer = malloc(sizeof(*p->buffer) * default_size);
 	if (!p->buffer) {
 		free(p);
 		return NULL;

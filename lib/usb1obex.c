@@ -165,8 +165,9 @@ next_desc:
 static int get_intf_string(struct libusb_device_handle *usb_handle, char **string, int id)
 {
 	if (id) {
-		if ((*string = malloc(USB_MAX_STRING_SIZE)) == NULL)
-			return -ENOMEM;
+		*string = malloc(USB_MAX_STRING_SIZE);
+		if (*string == NULL)
+			return -errno;
 		*string[0] = '\0';
 		return libusb_get_string_descriptor_ascii(usb_handle, id, (unsigned char*)*string, USB_MAX_STRING_SIZE);
 	}
@@ -188,7 +189,7 @@ static struct obex_usb_intf_transport_t *check_intf(struct libusb_device *dev,
 		const unsigned char *buffer = conf_desc->interface[i].altsetting[a].extra;
 		int buflen = conf_desc->interface[i].altsetting[a].extra_length;
 
-		next = malloc(sizeof(struct obex_usb_intf_transport_t));
+		next = malloc(sizeof(*next));
 		if (next == NULL)
 			return current;
 		next->device = dev;
@@ -256,10 +257,9 @@ int usbobex_find_interfaces(obex_interface_t **interfaces)
 		current = current->prev;
 		num++;
 	}
-	intf_array = malloc(sizeof(obex_interface_t) * num);
+	intf_array = calloc(num, sizeof(*intf_array));
 	if (intf_array == NULL)
 		goto cleanup_list;
-	memset(intf_array, 0, sizeof(obex_interface_t) * num);
 	num = 0;
 	while (current) {
 		struct libusb_device_handle *usb_handle;

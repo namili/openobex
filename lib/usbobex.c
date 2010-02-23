@@ -169,8 +169,9 @@ next_desc:
 static int get_intf_string(struct usb_dev_handle *usb_handle, char **string, int id)
 {
 	if (id) {
-		if ((*string = malloc(USB_MAX_STRING_SIZE)) == NULL)
-			return -ENOMEM;
+		*string = malloc(USB_MAX_STRING_SIZE);
+		if (*string == NULL)
+			return -errno;
 		*string[0] = '\0';
 		return usb_get_string_simple(usb_handle, id, *string, USB_MAX_STRING_SIZE);
 	}
@@ -193,7 +194,7 @@ static struct obex_usb_intf_transport_t *check_intf(struct usb_device *dev,
 		unsigned char *buffer = dev->config[c].interface[i].altsetting[a].extra;
 		int buflen = dev->config[c].interface[i].altsetting[a].extralen;
 
-		next = malloc(sizeof(struct obex_usb_intf_transport_t));
+		next = malloc(sizeof(*next));
 		if (next == NULL)
 			return current;
 		next->device = dev;
@@ -267,10 +268,9 @@ int usbobex_find_interfaces(obex_interface_t **interfaces)
 		current = current->prev;
 		num++;
 	}
-	intf_array = malloc(sizeof(obex_interface_t) * num);
+	intf_array = calloc(num, sizeof(*intf_array));
 	if (intf_array == NULL)
 		goto cleanup_list;
-	memset(intf_array, 0, sizeof(obex_interface_t) * num);
 	num = 0;
 	while (current) {
 		intf_array[num].usb.intf = current;

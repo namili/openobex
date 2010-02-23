@@ -42,15 +42,12 @@
  */
 obex_object_t *obex_object_new(void)
 {
-	obex_object_t *object;
+	obex_object_t *object = malloc(sizeof(*object));
 
-	object =  malloc(sizeof(obex_object_t));
-	if (object == NULL)
-		return(NULL);
-
-	memset(object, 0, sizeof(obex_object_t));
-
-	obex_object_setrsp(object, OBEX_RSP_NOT_IMPLEMENTED, OBEX_RSP_NOT_IMPLEMENTED);
+	if (object != NULL) {
+		memset(object, 0, sizeof(*object));
+		obex_object_setrsp(object, OBEX_RSP_NOT_IMPLEMENTED, OBEX_RSP_NOT_IMPLEMENTED);
+	}
 
 	return object;
 }
@@ -183,11 +180,11 @@ int obex_object_addheader(obex_t *self, obex_object_t *object, uint8_t hi,
 	} else
 		maxlen = self->mtu_tx - sizeof(struct obex_common_hdr);
 
-	element = malloc(sizeof(struct obex_header_element));
+	element = malloc(sizeof(*element));
 	if (element == NULL)
 		return -1;
 
-	memset(element, 0, sizeof(struct obex_header_element));
+	memset(element, 0, sizeof(*element));
 
 	element->hi = hi;
 	element->flags = flags;
@@ -712,8 +709,9 @@ static int obex_object_receive_body(obex_object_t *object, buf_t *msg, uint8_t h
 
 	if (hi == OBEX_HDR_BODY_END) {
 		DEBUG(4, "Body receive done\n");
-		if ( (element = malloc(sizeof(struct obex_header_element)) ) ) {
-			memset(element, 0, sizeof(struct obex_header_element));
+		element = malloc(sizeof(*element));
+		if (element != NULL) {
+			memset(element, 0, sizeof(*element));
 			element->length = object->rx_body->data_size;
 			element->hi = OBEX_HDR_BODY;
 			element->buf = object->rx_body;
@@ -839,8 +837,9 @@ int obex_object_receive(obex_t *self, buf_t *msg)
 							object->hinted_body_len);
 			}
 
-			if ( (element = malloc(sizeof(struct obex_header_element)) ) ) {
-				memset(element, 0, sizeof(struct obex_header_element));
+			element = malloc(sizeof(*element));
+			if (element != NULL) {
+				memset(element, 0, sizeof(*element));
 				element->length = len;
 				element->hi = hi;
 
