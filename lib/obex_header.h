@@ -25,12 +25,6 @@
 struct databuffer;
 #include <inttypes.h>
 
-#define OBEX_HI_MASK     0xc0
-#define OBEX_UNICODE     0x00
-#define OBEX_BYTE_STREAM 0x40
-#define OBEX_BYTE        0x80
-#define OBEX_INT         0xc0
-
 /* Common header used by all frames */
 
 #pragma pack(1)

@@ -206,8 +206,8 @@ int obex_object_addheader(obex_t *self, obex_object_t *object, uint8_t hi,
 		return 1;
 	}
 
-	switch (hi & OBEX_HI_MASK) {
-	case OBEX_INT:
+	switch (hi & OBEX_HDR_TYPE_MASK) {
+	case OBEX_HDR_TYPE_UINT32:
 		DEBUG(2, "4BQ header %d\n", hv.bq4);
 
 		element->buf = buf_new(sizeof(struct obex_uint_hdr));
@@ -217,7 +217,7 @@ int obex_object_addheader(obex_t *self, obex_object_t *object, uint8_t hi,
 		}
 		break;
 
-	case OBEX_BYTE:
+	case OBEX_HDR_TYPE_UINT8:
 		DEBUG(2, "1BQ header %d\n", hv.bq1);
 
 		element->buf = buf_new(sizeof(struct obex_ubyte_hdr));
@@ -227,7 +227,7 @@ int obex_object_addheader(obex_t *self, obex_object_t *object, uint8_t hi,
 		}
 		break;
 
-	case OBEX_BYTE_STREAM:
+	case OBEX_HDR_TYPE_BYTES:
 		DEBUG(2, "BS  header size %d\n", hv_size);
 
 		element->buf = buf_new(hv_size + sizeof(struct obex_byte_stream_hdr) );
@@ -237,7 +237,7 @@ int obex_object_addheader(obex_t *self, obex_object_t *object, uint8_t hi,
 		}
 		break;
 
-	case OBEX_UNICODE:
+	case OBEX_HDR_TYPE_UNICODE:
 		DEBUG(2, "Unicode header size %d\n", hv_size);
 
 		element->buf = buf_new(hv_size + sizeof(struct obex_unicode_hdr));
@@ -248,7 +248,7 @@ int obex_object_addheader(obex_t *self, obex_object_t *object, uint8_t hi,
 		break;
 
 	default:
-		DEBUG(2, "Unsupported encoding %02x\n", hi & OBEX_HI_MASK);
+		DEBUG(2, "Unsupported encoding %02x\n", hi & OBEX_HDR_TYPE_MASK);
 		ret = -1;
 		break;
 	}
@@ -584,21 +584,21 @@ int obex_object_getnextheader(obex_t *self, obex_object_t *object, uint8_t *hi,
 	*hi = h->hi;
 	*hv_size= h->length;
 
-	switch (h->hi & OBEX_HI_MASK) {
-		case OBEX_BYTE_STREAM:
+	switch (h->hi & OBEX_HDR_TYPE_MASK) {
+		case OBEX_HDR_TYPE_BYTES:
 			hv->bs = &h->buf->data[0];
 			break;
 
-		case OBEX_UNICODE:
+		case OBEX_HDR_TYPE_UNICODE:
 			hv->bs = &h->buf->data[0];
 			break;
 
-		case OBEX_INT:
+		case OBEX_HDR_TYPE_UINT32:
 			bq4 = (uint32_t*) h->buf->data;
 			hv->bq4 = ntohl(*bq4);
 			break;
 
-		case OBEX_BYTE:
+		case OBEX_HDR_TYPE_UINT8:
 			hv->bq1 = h->buf->data[0];
 			break;
 	}
@@ -773,16 +773,16 @@ int obex_object_receive(obex_t *self, buf_t *msg)
 	while ((msg->data_size > 0) && (!err)) {
 		hi = msg->data[0];
 		DEBUG(4, "Header: %02x\n", hi);
-		switch (hi & OBEX_HI_MASK) {
+		switch (hi & OBEX_HDR_TYPE_MASK) {
 
-		case OBEX_UNICODE:
+		case OBEX_HDR_TYPE_UNICODE:
 			h.unicode = (struct obex_unicode_hdr *) msg->data;
 			source = &msg->data[3];
 			hlen = ntohs(h.unicode->hl);
 			len = hlen - 3;
 			break;
 
-		case OBEX_BYTE_STREAM:
+		case OBEX_HDR_TYPE_BYTES:
 			h.bstream = (struct obex_byte_stream_hdr *) msg->data;
 			source = &msg->data[3];
 			hlen = ntohs(h.bstream->hl);
@@ -801,17 +801,18 @@ int obex_object_receive(obex_t *self, buf_t *msg)
 			}
 			break;
 
-		case OBEX_BYTE:
+		case OBEX_HDR_TYPE_UINT8:
 			source = &msg->data[1];
 			len = 1;
 			hlen = 2;
 			break;
 
-		case OBEX_INT:
+		case OBEX_HDR_TYPE_UINT32:
 			source = &msg->data[1];
 			len = 4;
 			hlen = 5;
 			break;
+
 		default:
 			DEBUG(1, "Badly formed header received\n");
 			source = NULL;
