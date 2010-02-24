@@ -57,7 +57,6 @@ To this function events from the library will be passed to you, for example when
 First of all you must connect the transport using
 #OBEX_TransportConnect or one of
   - #TcpOBEX_TransportConnect
-  - #InOBEX_TransportConnect
   - #IrOBEX_TransportConnect
   - #BtOBEX_TransportConnect
   - #FdOBEX_TransportSetup.
