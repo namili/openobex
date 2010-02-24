@@ -300,7 +300,7 @@ static int send_stream(obex_t *self,
 			/* Ask app for more data if no more */
 			object->s_offset = 0;
 			object->s_buf = NULL;
-			obex_deliver_event(self, OBEX_EV_STREAMEMPTY, 0, 0, FALSE);
+			obex_deliver_event(self, OBEX_EV_STREAMEMPTY, object->cmd, 0, FALSE);
 			DEBUG(4, "s_len=%d, s_stop = %d\n",
 						object->s_len, object->s_stop);
 			/* End of stream ?*/
@@ -652,13 +652,13 @@ static void obex_object_receive_stream(obex_t *self, uint8_t hi,
 	}
 
 	/* Notify app that data has arrived */
-	obex_deliver_event(self, OBEX_EV_STREAMAVAIL, 0, 0, FALSE);
+	obex_deliver_event(self, OBEX_EV_STREAMAVAIL, object->cmd, 0, FALSE);
 
 	/* If send send EOS to app */
 	if (hi == OBEX_HDR_BODY_END && len != 0) {
 		object->s_buf = source;
 		object->s_len = 0;
-		obex_deliver_event(self, OBEX_EV_STREAMAVAIL, 0, 0, FALSE);
+		obex_deliver_event(self, OBEX_EV_STREAMAVAIL, object->cmd, 0, FALSE);
 	}
 }
 
