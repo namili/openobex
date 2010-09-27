@@ -114,6 +114,7 @@ OPENOBEX_SYMBOL(int) OBEX_UnicodeToChar(uint8_t *c, const uint8_t *uc, int size)
 OPENOBEX_SYMBOL(int) OBEX_CharToUnicode(uint8_t *uc, const uint8_t *c, int size);
 
 OPENOBEX_SYMBOL(char *) OBEX_ResponseToString(int rsp);
+OPENOBEX_SYMBOL(void)	OBEX_SetEnableSRM(obex_object_t * object);
 
 /*
  * TcpOBEX API (IPv4/IPv6)
@@ -147,7 +148,7 @@ OPENOBEX_SYMBOL(int) BtOBEX_TransportConnect(obex_t *self, bt_addr_t *src, bt_ad
 /*
  * OBEX File API
  */
-OPENOBEX_SYMBOL(int) FdOBEX_TransportSetup(obex_t *self, int rfd, int wfd, int mtu);
+OPENOBEX_SYMBOL(int) FdOBEX_TransportSetup(obex_t *self, int rfd, int wfd, int mtu, int fmt);
 
 /*  
  * OBEX interface discovery API 

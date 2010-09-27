@@ -59,6 +59,7 @@ typedef union {
 
 typedef struct obex_transport {
 	int	type;
+	int	fmt;		/* msg type: stream |seqpacket */				
 	int connected;	/* Link connection state */
 	unsigned int	mtu;		/* Tx MTU of the link */
 	saddr_t	self;		/* Source address */

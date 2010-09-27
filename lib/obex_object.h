@@ -30,6 +30,7 @@
 #endif
 #include <time.h>
 #include <inttypes.h>
+#include <pthread.h>
 
 struct databuffer;
 struct databuffer_list;
@@ -37,6 +38,12 @@ struct databuffer_list;
 /* If an object has no expected length we have to reallocated every
  * OBEX_OBJECT_ALLOCATIONTRESHOLD bytes */
 #define OBEX_OBJECT_ALLOCATIONTRESHOLD 10240
+
+typedef enum {
+	THREAD_NORMAL,
+	THREAD_ABORT,
+	THREAD_EXIT,	
+}ThreadStatus;
 
 struct obex_header_element {
 	struct databuffer *buf;
@@ -83,6 +90,9 @@ struct obex_object {
 	unsigned int s_offset;		/* Current offset in buf */
 	int s_stop;			/* End of stream */
 	int s_srv;			/* Deliver body as stream when server */
+	int srm;			/*Whether the srm is enabled*/
+	int srm_srsp;			/* Whether we've sent the srm rsp */
+	int srm_grsp;			/* Whether we've got the srm rsp */
 };
 
 struct obex_object *obex_object_new(void);

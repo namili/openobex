@@ -143,6 +143,10 @@ typedef union {
 #define OBEX_TRANS_FD		5
 #define OBEX_TRANS_USB		6
 
+/* Msg type */
+#define OBEX_MT_STREAM		0
+#define OBEX_MT_SEQPACKET	1
+
 /* Standard headers */
 #define OBEX_HDR_TYPE_UNICODE	(0 << 6)  /* zero terminated unicode string (network byte order) */
 #define OBEX_HDR_TYPE_BYTES	(1 << 6)  /* byte array */
@@ -173,6 +177,8 @@ typedef union {
 #define OBEX_HDR_ID_ACTION_ID	 0x14	/* Specifies the action for the ACTION command */
 #define OBEX_HDR_ID_DESTNAME	 0x15	/* Destination object name */
 #define OBEX_HDR_ID_PERMISSIONS	 0x16	/* bit mask for setting permissions */
+#define OBEX_HDR_ID_SRM	         0x17   /* setup single response mode */
+#define OBEX_HDR_ID_SRMPARAM	 0x18   /* set parameters using during single response mode */
 #define OBEX_HDR_ID_MASK	 0x3f
 
 #define OBEX_HDR_EMPTY		0x00	/* Empty header (buggy OBEX servers) */
@@ -200,6 +206,8 @@ typedef union {
 #define OBEX_HDR_ACTION_ID	(OBEX_HDR_ID_ACTION_ID    | OBEX_HDR_TYPE_UINT8  )
 #define OBEX_HDR_DESTNAME	(OBEX_HDR_ID_DESTNAME     | OBEX_HDR_TYPE_UNICODE)
 #define OBEX_HDR_PERMISSIONS	(OBEX_HDR_ID_PERMISSIONS  | OBEX_HDR_TYPE_UINT32 )
+#define OBEX_HDR_SRM            (OBEX_HDR_ID_SRM      | OBEX_HDR_TYPE_UINT8  ) 
+#define OBEX_HDR_SRMPARAM       (OBEX_HDR_ID_SRMPARAM | OBEX_HDR_TYPE_UINT8  ) 	
 
 /* Commands */
 #define OBEX_CMD_CONNECT	0x00
@@ -211,6 +219,15 @@ typedef union {
 #define OBEX_CMD_SESSION	0x07 /* used for reliable session support */
 #define OBEX_CMD_ABORT		0x7f
 #define OBEX_FINAL		0x80
+
+#define OBEX_SRM_DISABLE	0x00
+#define OBEX_SRM_ENABLE		0x01
+#define OBEX_SRM_ADVERTISE	0x02
+#define OBEX_SRM_INVALID	0xFF
+
+#define OBEX_ACTION_COPY    	0x00
+#define OBEX_ACTION_MOVE    	0x01
+#define OBEX_ACTION_SETPERM		0x02
 
 /* Responses */
 #define	OBEX_RSP_CONTINUE		0x10

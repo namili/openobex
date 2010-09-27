@@ -47,6 +47,7 @@ obex_object_t *obex_object_new(void)
 	if (object != NULL) {
 		memset(object, 0, sizeof(*object));
 		obex_object_setrsp(object, OBEX_RSP_NOT_IMPLEMENTED, OBEX_RSP_NOT_IMPLEMENTED);
+		object->srm = FALSE;
 	}
 
 	return object;
@@ -215,7 +216,7 @@ int obex_object_addheader(obex_t *self, obex_object_t *object, uint8_t hi,
 		break;
 
 	case OBEX_HDR_TYPE_UINT8:
-		DEBUG(2, "1BQ header %d\n", hv.bq1);
+		DEBUG(2, "1BQ header hi %x,hv %d\n", hi,hv.bq1);
 
 		element->buf = buf_new(sizeof(struct obex_ubyte_hdr));
 		if (element->buf) {
@@ -466,9 +467,19 @@ int obex_object_send(obex_t *self, obex_object_t *object,
 	/* Take headers from the tx queue and try to stuff as
 	   many as possible into the tx-msg */
 	while (addmore == TRUE && object->tx_headerq != NULL) {
-
+		
 		h = object->tx_headerq->data;
-
+		DEBUG(4,"has head to send  hi=%02x\n",h->hi);
+		if(h->hi == OBEX_HDR_SRM) {
+			
+			if(self->state & MODE_SRV) {
+				self->object->srm = TRUE;
+				self->object->srm_srsp = TRUE;
+				DEBUG(4,"set srm_srsp to TRUE\n");
+			}
+			else{
+			}
+		}
 		if (h->stream) {
 			/* This is a streaming body */
 			if (h->flags & OBEX_FL_SUSPEND)
@@ -541,7 +552,7 @@ int obex_object_send(obex_t *self, obex_object_t *object,
 		finished = 1;
 	}
 
-	DEBUG(4, "Sending package with opcode %d\n", real_opcode);
+	DEBUG(4, "Sending package with opcode %02x\n", real_opcode);
 	actual = obex_data_request(self, txmsg, real_opcode);
 
 	if (actual < 0) {
@@ -829,6 +840,18 @@ int obex_object_receive(obex_t *self, buf_t *msg)
 		}
 
 		if (source) {
+			if (hi == OBEX_HDR_SRM) {
+				if(msg->data[1]==OBEX_SRM_ENABLE){
+					
+					if(self->state&MODE_SRV){
+						hi = hi;
+					}else{
+						object->srm = TRUE;
+						DEBUG(4, "client srm is enabled\n");
+						}
+					}
+			}
+			
 			/* The length MAY be useful when receiving body. */
 			if (hi == OBEX_HDR_LENGTH) {
 				h.uint = (struct obex_uint_hdr *) msg->data;
@@ -923,6 +946,8 @@ int obex_object_resume(obex_t *self, obex_object_t *object)
 
 	cmd = (self->state & MODE_SRV) ? object->cmd :
 						object->opcode & ~OBEX_FINAL;
+
+	DEBUG(4, "call obex_object_send\n");
 
 	ret = obex_object_send(self, object, TRUE, FALSE);
 

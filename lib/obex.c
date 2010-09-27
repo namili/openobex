@@ -624,6 +624,16 @@ obex_object_t * CALLAPI OBEX_ObjectNew(obex_t *self, uint8_t cmd)
 }
 
 /**
+	enable self SRM
+ */
+LIB_SYMBOL
+void CALLAPI OBEX_SetEnableSRM(obex_object_t *object)
+{
+	obex_return_if_fail(object != NULL);
+	object->srm = TRUE;
+}
+
+/**
 	Delete an OBEX object.
 	\param self OBEX handle
 	\param object object to delete.
@@ -1154,10 +1164,11 @@ int CALLAPI BtOBEX_TransportConnect(obex_t *self, bdaddr_t *src,
 	\param rfd descriptor to read
 	\param wfd descriptor to write
 	\param mtu transport mtu: 0 - default
+	\param fmt msg type: stream | seqpacket
 	\return -1 or negative error code on error
  */
 LIB_SYMBOL
-int CALLAPI FdOBEX_TransportSetup(obex_t *self, int rfd, int wfd, int mtu)
+int CALLAPI FdOBEX_TransportSetup(obex_t *self, int rfd, int wfd, int mtu, int fmt)
 {
 	DEBUG(4, "\n");
 
@@ -1170,6 +1181,8 @@ int CALLAPI FdOBEX_TransportSetup(obex_t *self, int rfd, int wfd, int mtu)
 	self->fd = rfd;
 	self->writefd = wfd;
 	self->trans.mtu = mtu ? mtu : self->mtu_tx_max;
+	self->trans.fmt = fmt;
+	
 	return obex_transport_connect_request(self);
 }
 

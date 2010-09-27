@@ -33,6 +33,40 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+static pthread_t tid = -1;
+static ThreadStatus thread_status = THREAD_NORMAL;
+
+static void thr_srm_put(void *para)
+{
+   
+   obex_t * self = (obex_t *) para;
+   obex_common_hdr_t request;
+   buf_t msg;
+   request.len = 0x0;
+   request.opcode = OBEX_RSP_CONTINUE;
+   msg.data = (uint8_t*)&request;
+   msg.data_size = 0;
+   while(1)
+   {
+   
+	   if((thread_status == THREAD_ABORT)||(thread_status == THREAD_EXIT))
+	   {
+		   DEBUG(4, "thread_status is THREAD_ABORT or THREAD_EXIT, thread exit\n");
+		   break;
+	   }
+	   DEBUG(4, "running\n");
+	   msg.data = (uint8_t*)&request;
+	   msg.data_size = 0;
+	   obex_client(self,&msg,128);
+	   if((self->object!=NULL)&&((self->state & ~MODE_SRV)!=STATE_IDLE))
+		   continue;
+	   else
+		   break;
+   }
+   tid = -1;
+}
+
+
 /*
  * Function obex_client ()
  *
@@ -43,6 +77,7 @@ int obex_client(obex_t *self, buf_t *msg, int final)
 {
 	obex_common_hdr_t *response = NULL;
 	int rsp = OBEX_RSP_BAD_REQUEST, ret;
+	static int thread_create = FALSE;
 
 	DEBUG(4, "\n");
 
@@ -106,6 +141,7 @@ int obex_client(obex_t *self, buf_t *msg, int final)
 	case STATE_START:
 		/* Nothing has been sent yet */
 		DEBUG(4, "STATE_START\n");
+		thread_create = FALSE;
 
 		if (!self->object) {
 			DEBUG(4, "Got unexpected data from the server\n");
@@ -164,25 +200,44 @@ int obex_client(obex_t *self, buf_t *msg, int final)
 			self->object->continue_received = 1;
 
 			if (self->object->abort) {
-				DEBUG(3, "Ignoring CONTINUE because request was aborted\n");
+				DEBUG(4, "Ignoring CONTINUE because request was aborted \n");
+				if(tid!=-1)
+					thread_status = THREAD_ABORT;
 				break;
 			}
 
 			if (self->object->suspend) {
-				DEBUG(3, "Not sending new request because transfer is suspended\n");
+				DEBUG(4, "Not sending new request because transfer is suspended\n");
 				break;
 			}
-
-			if (obex_object_send(self, self->object, TRUE, FALSE) < 0)
-				obex_deliver_event(self, OBEX_EV_LINKERR, self->object->opcode, 0, TRUE);
-			else
-				obex_deliver_event(self, OBEX_EV_PROGRESS, self->object->opcode, 0, FALSE);
-
+			
+			if((self->object->opcode == OBEX_CMD_GET)&&(self->object->srm)){
+					DEBUG(4, "client SRM,do not send rsp!\n");
+					obex_deliver_event(self, OBEX_EV_PROGRESS, self->object->opcode, 0, FALSE);
+				}
+			else{
+				ret = obex_object_send(self, self->object, TRUE, FALSE);
+				if (ret < 0)
+					obex_deliver_event(self, OBEX_EV_LINKERR, self->object->opcode, 0, TRUE);
+				else {
+					obex_deliver_event(self, OBEX_EV_PROGRESS, self->object->opcode, 0, FALSE);
+					if((ret==1)&&(tid!=-1)){
+						/*had sent over,thread exit*/
+						thread_status = THREAD_EXIT;
+					}
+						
+				}
+			}
 			if (self->object)
 				self->object->continue_received = 0;
+			if((ret == 0)&&(self->object->opcode == OBEX_CMD_PUT)&&(!thread_create)&&(self->object->srm)){
+				thread_create = TRUE;
+				thread_status = THREAD_NORMAL;
+				pthread_create(&tid,NULL,thr_srm_put,self);
+			}
 		} else {
 			/* Notify app that client-operation is done! */
-			DEBUG(3, "Done! Rsp=%02x!\n", rsp);
+			DEBUG(4, "Done! Rsp=%02x!\n", rsp);
 			self->state = MODE_SRV | STATE_IDLE;
 			if (self->object->abort) {
 				if (rsp == OBEX_RSP_SUCCESS)
@@ -198,6 +253,8 @@ int obex_client(obex_t *self, buf_t *msg, int final)
 	default:
 		DEBUG(0, "Unknown state\n");
 		obex_deliver_event(self, OBEX_EV_PARSEERR, rsp, 0, TRUE);
+		if(tid!=-1)
+			thread_status = THREAD_EXIT;
 		return -1;
 	}
 

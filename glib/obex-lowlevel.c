@@ -496,7 +496,7 @@ obex_t *obex_open(int fd, obex_callback_t *callback, void *data)
 
 	OBEX_SetTransportMTU(handle, sizeof(context->buf), sizeof(context->buf));
 
-	if (FdOBEX_TransportSetup(handle, fd, fd, 0) < 0) {
+	if (FdOBEX_TransportSetup(handle, fd, fd, 0, OBEX_MT_STREAM) < 0) {
 		OBEX_Cleanup(handle);
 		return NULL;
 	}

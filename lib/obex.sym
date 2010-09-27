@@ -33,6 +33,7 @@ OBEX_ObjectGetCommand
 OBEX_UnicodeToChar
 OBEX_CharToUnicode
 OBEX_ResponseToString
+OBEX_SetEnableSRM
 TcpOBEX_ServerRegister
 TcpOBEX_TransportConnect
 IrOBEX_ServerRegister

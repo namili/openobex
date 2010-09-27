@@ -47,6 +47,7 @@ extern bdaddr_t bluez_compat_bdaddr_any;
 #elif defined(HAVE_BLUETOOTH_LINUX)
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
+#include <bluetooth/l2cap.h>
 
 #elif defined(HAVE_BLUETOOTH_FREEBSD)
 #include <bluetooth.h>

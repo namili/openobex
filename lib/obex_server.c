@@ -33,19 +33,52 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <pthread.h>
 
+
+static pthread_t tid = -1;
+static ThreadStatus thread_status = THREAD_NORMAL;
+
+static void thr_srm_get(void *para)
+ {
+	obex_t * self = (obex_t *) para;
+	obex_common_hdr_t request;
+	buf_t msg;
+	request.len = 0;
+	request.opcode = OBEX_CMD_GET;
+	msg.data = (uint8_t*)&request;
+		
+
+	while(1)
+	{
+		if((thread_status == THREAD_ABORT)||(thread_status == THREAD_EXIT))
+		{
+			DEBUG(4, "thread_status is THREAD_ABORT or THREAD_EXIT, thread exit\n");
+			break;
+		}
+		DEBUG(4, "thr_srm_get running------------------\n");
+		obex_server(self,&msg,128);
+		if((self->object!=NULL)&&((self->state & ~MODE_SRV)!=STATE_IDLE))
+			continue;
+		else
+			break;
+	}
+	
+	tid = -1;
+}
 /*
  * Function obex_server ()
  *
  *    Handle server-operations
  *
  */
+
 int obex_server(obex_t *self, buf_t *msg, int final)
 {
 	obex_common_hdr_t *request;
 	int cmd, ret, deny = 0;
 	unsigned int len;
-
+	static int thread_create = FALSE;
 	DEBUG(4, "\n");
 
 	request = (obex_common_hdr_t *) msg->data;
@@ -56,7 +89,7 @@ int obex_server(obex_t *self, buf_t *msg, int final)
 	case STATE_IDLE:
 		/* Nothing has been recieved yet, so this is probably a new request */
 		DEBUG(4, "STATE_IDLE\n");
-
+		thread_create = FALSE;
 		if (self->object) {
 			/* What shall we do here? I don't know!*/
 			DEBUG(0, "Got a new server-request while already having one!\n");
@@ -153,10 +186,22 @@ int obex_server(obex_t *self, buf_t *msg, int final)
 					break;
 			}
 		}
-
+		
+		DEBUG(4, "final= %d , opcode=%02x\n",final,self->object->opcode);
 		if (!final) {
 			/* As a server, the final bit is always SET- Jean II */
+			if(cmd == OBEX_CMD_PUT){
+				if((self->object->srm)&&(self->object->srm_srsp)){
+					DEBUG(4, "SRM,do not send rsp!\n");
+					obex_deliver_event(self, OBEX_EV_PROGRESS, cmd, 0, FALSE);
+					break;
+				}
+			}
+				
+			DEBUG(4, "call obex_object_send\n");
 			if (obex_object_send(self, self->object, FALSE, TRUE) < 0) {
+				if(tid!=-1)
+					thread_status = THREAD_EXIT;
 				obex_deliver_event(self, OBEX_EV_LINKERR, cmd, 0, TRUE);
 				return -1;
 			} else
@@ -181,10 +226,11 @@ int obex_server(obex_t *self, buf_t *msg, int final)
 	case STATE_SEND:
 		/* Send back response */
 		DEBUG(4, "STATE_SEND\n");
-
 		/* Abort? */
 		if (cmd == OBEX_CMD_ABORT) {
-			DEBUG(1, "Got OBEX_ABORT request!\n");
+			DEBUG(4, "Got OBEX_ABORT request!\n");
+			while(tid != -1)
+				thread_status = THREAD_ABORT;
 			obex_response_request(self, OBEX_RSP_SUCCESS);
 			self->state = MODE_SRV | STATE_IDLE;
 			obex_deliver_event(self, OBEX_EV_ABORT, self->object->opcode, cmd, TRUE);
@@ -195,7 +241,7 @@ int obex_server(obex_t *self, buf_t *msg, int final)
 
 		if (len > 3) {
 			DEBUG(1, "STATE_SEND Didn't expect data from peer (%d)\n", len);
-			DUMPBUFFER(4, "unexpected data", msg);
+			//DUMPBUFFER(4, "unexpected data", msg);
 			/* At this point, we are in the middle of sending
 			 * our response to the client, and it is still
 			 * sending us some data ! This break the whole
@@ -248,8 +294,17 @@ int obex_server(obex_t *self, buf_t *msg, int final)
 			obex_deliver_event(self, OBEX_EV_PROGRESS, cmd, 0, FALSE);
 			self->object->first_packet_sent = 1;
 			self->object->continue_received = 0;
+			if((cmd == OBEX_CMD_GET)&&(!thread_create)&&(self->object->srm)){
+				
+				DEBUG(4, "pthread_create thr_srm_get\n");
+				thread_status = THREAD_NORMAL;
+				pthread_create(&tid,NULL,thr_srm_get,self);
+				thread_create = TRUE;
+			}			
 		} else if (ret < 0) {
 			/* Error sending response */
+			if(tid!=-1)
+				thread_status = THREAD_EXIT;
 			obex_deliver_event(self, OBEX_EV_LINKERR, cmd, 0, TRUE);
 			return -1;
 		} else {
@@ -258,6 +313,9 @@ int obex_server(obex_t *self, buf_t *msg, int final)
 				DEBUG(2, "CMD_DISCONNECT done. Resetting MTU!\n");
 				self->mtu_tx = OBEX_MINIMUM_MTU;
 			}
+			
+			if(tid != -1)
+				thread_status = THREAD_EXIT;
 			self->state = MODE_SRV | STATE_IDLE;
 			obex_deliver_event(self, OBEX_EV_REQDONE, cmd, 0, TRUE);
 		}
@@ -267,7 +325,10 @@ int obex_server(obex_t *self, buf_t *msg, int final)
 		DEBUG(0, "Unknown state\n");
 		obex_response_request(self, OBEX_RSP_BAD_REQUEST);
 		obex_deliver_event(self, OBEX_EV_PARSEERR, cmd, 0, TRUE);
+		if(tid!=-1)
+			thread_status = THREAD_EXIT;
 		return -1;
 	}
 	return 0;
 }
+

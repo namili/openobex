@@ -240,35 +240,25 @@ int obex_data_indication(obex_t *self, uint8_t *buf, int buflen)
 	obex_return_val_if_fail(self != NULL, -1);
 
 	msg = self->rx_msg;
-	
-	/* First we need 3 bytes to be able to know how much data to read */
-	if(msg->data_size < 3)  {
-		actual = obex_transport_read(self, 3 - (msg->data_size), buf, buflen);
+
+	if (self->trans.fmt == OBEX_MT_SEQPACKET) {
+		actual = obex_transport_read(self, msg->data_avail, buf, buflen);
 		
 		DEBUG(4, "Got %d bytes\n", actual);
-
-		/* Check if we are still connected */
-		/* do not error if the data is from non-empty but partial buffer (custom transport) */
+		
 		if (buf == NULL && buflen == 0 && actual <= 0)	{
 			obex_deliver_event(self, OBEX_EV_LINKERR, 0, 0, TRUE);
 			return actual;
 		}
-		buf += actual;
-		buflen -= actual;
-	}
-
-	/* If we have 3 bytes data we can decide how big the packet is */
-	if(msg->data_size >= 3) {
+		
 		hdr = (obex_common_hdr_t *) msg->data;
 		size = ntohs(hdr->len);
-
-		actual = 0;
-		if(msg->data_size < (int) ntohs(hdr->len)) {
-
-			actual = obex_transport_read(self, size - msg->data_size, buf,
-				buflen);
-			/* hdr might not be valid anymore if the _read did a realloc */
-			hdr = (obex_common_hdr_t *) msg->data;
+	} 
+	else {
+		/* First we need 3 bytes to be able to know how much data to read */
+		if(msg->data_size < 3)  {
+			actual = obex_transport_read(self, 3 - (msg->data_size), buf, buflen);
+			DEBUG(4, "Got %d bytes\n", actual);
 
 			/* Check if we are still connected */
 			/* do not error if the data is from non-empty but partial buffer (custom transport) */
@@ -276,14 +266,37 @@ int obex_data_indication(obex_t *self, uint8_t *buf, int buflen)
 				obex_deliver_event(self, OBEX_EV_LINKERR, 0, 0, TRUE);
 				return actual;
 			}
+			buf += actual;
+			buflen -= actual;
 		}
-	}
-        else {
-		/* Wait until we have at least 3 bytes data */
-		DEBUG(3, "Need at least 3 bytes got only %d!\n", msg->data_size);
-		return actual;
-        }
 
+		/* If we have 3 bytes data we can decide how big the packet is */
+		if(msg->data_size >= 3) {
+			hdr = (obex_common_hdr_t *) msg->data;
+			size = ntohs(hdr->len);
+
+			actual = 0;
+			if(msg->data_size < (int) ntohs(hdr->len)) {
+
+				actual = obex_transport_read(self, size - msg->data_size, buf,
+					buflen);
+				/* hdr might not be valid anymore if the _read did a realloc */
+				hdr = (obex_common_hdr_t *) msg->data;
+
+				/* Check if we are still connected */
+				/* do not error if the data is from non-empty but partial buffer (custom transport) */
+				if (buf == NULL && buflen == 0 && actual <= 0)	{
+					obex_deliver_event(self, OBEX_EV_LINKERR, 0, 0, TRUE);
+					return actual;
+				}
+			}
+		}
+        	else {
+			/* Wait until we have at least 3 bytes data */
+			DEBUG(3, "Need at least 3 bytes got only %d!\n", msg->data_size);
+			return actual;
+        	}
+	}
 
 	/* New data has been inserted at the end of message */
 	DEBUG(1, "Got %d bytes msg len=%d\n", actual, msg->data_size);
