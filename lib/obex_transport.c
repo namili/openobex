@@ -417,33 +417,28 @@ static ssize_t write_wrap (int s, const void *buf, size_t len)
 
 	timeout.tv_sec=1;
 	timeout.tv_usec=200;
-	FD_ZERO(&writefd);
-	FD_SET(s,&writefd);
-select_again:
-	ret=select(s+1,NULL,&writefd,NULL,&timeout);
-	
-	/* Check if this is a timeout (0) or error (-1) */
-	
-	if(ret < 0){
-		
-		DEBUG(4,"select error:%s,errno=%d\n",strerror(errno),errno);
-		if(errno==EINTR)//ignore it 
-			goto select_again;
-		else
-			return ret;
-	}
-	else if(ret==0){
-		DEBUG(4,"select timeout\n");
-		return -1;
-	}
-	else {
-		ret =  write(s,buf,len);
-		if(ret<=0){
-			DEBUG(4,"write error:%s,errno=%d\n",strerror(errno),errno);
-			close(s);
+
+	while (1){
+		FD_ZERO(&writefd);
+		FD_SET(s,&writefd);
+		select(s+1,NULL,&writefd,NULL,&timeout);
+		if (FD_ISSET(s, &writefd))
+			break;
+		else {
+			DEBUG(4,"select error:%s,errno=%d\n",strerror(errno),errno);
+			if (errno == EINTR)
+				continue;
+			else 
+				DEBUG(4,"select timeout\n");
 		}
-		return ret;
 	}
+
+	ret =  write(s,buf,len);
+	if(ret<=0){
+		DEBUG(4,"write error:%s,errno=%d\n",strerror(errno),errno);
+		close(s);
+	}
+	return ret;
 #endif
 }
 
