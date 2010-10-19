@@ -77,11 +77,13 @@ int obex_server(obex_t *self, buf_t *msg, int final)
 {
 	obex_common_hdr_t *request;
 	int cmd, ret, deny = 0;
+	int cmd_bak = 0;
 	unsigned int len;
 	static int thread_create = FALSE;
 	DEBUG(4, "\n");
 
 	request = (obex_common_hdr_t *) msg->data;
+	cmd_bak = request->opcode;
 	cmd = request->opcode & ~OBEX_FINAL;
 	len = ntohs(request->len);
 
@@ -216,8 +218,10 @@ int obex_server(obex_t *self, buf_t *msg, int final)
 			/* Tell the app that a whole request has arrived. While
 			   this event is delivered the app should append the
 			   headers that should be in the response */
-			if (!deny)
-				obex_deliver_event(self, OBEX_EV_REQ, cmd, 0, FALSE);
+			if (!deny){
+				/*send original command include final bit*/
+				obex_deliver_event(self, OBEX_EV_REQ, cmd_bak, 0, FALSE);
+			}
 			self->state = MODE_SRV | STATE_SEND;
 			len = 3; /* Otherwise sanitycheck later will fail */
 		}
