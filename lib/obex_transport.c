@@ -421,16 +421,23 @@ static ssize_t write_wrap (int s, const void *buf, size_t len)
 	while (1){
 		FD_ZERO(&writefd);
 		FD_SET(s,&writefd);
-		select(s+1,NULL,&writefd,NULL,&timeout);
-		if (FD_ISSET(s, &writefd))
-			break;
-		else {
+		ret = select(s+1,NULL,&writefd,NULL,&timeout);
+		if(ret<0){
 			DEBUG(4,"select error:%s,errno=%d\n",strerror(errno),errno);
 			if (errno == EINTR)
 				continue;
 			else 
-				DEBUG(4,"select timeout\n");
+				return ret;
+
 		}
+		else if(ret==0){
+			DEBUG(4,"select timeout\n");
+		}
+		else{	
+			if (FD_ISSET(s, &writefd))
+				break;
+		}
+		
 	}
 
 	ret =  write(s,buf,len);
